@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 use Exception;
@@ -34,10 +36,10 @@ class Code
 
         $filler = new FrameFiller($width, $frame);
         if (is_null($filler)) {
-            return NULL;
+            return null;
         }
 
-        // inteleaved data and ecc codes
+        // interleaved data and ecc codes
         for ($i = 0; $i < $raw->dataLength + $raw->eccLength; $i++) {
             $code = $raw->getCode();
             $bit = 0x80;
@@ -62,11 +64,9 @@ class Code
         $frame = $filler->frame;
         unset($filler);
 
-
         // masking
         $maskObj = new Mask();
         if ($mask < 0) {
-
             if (Config::$findBestMask) {
                 $masked = $maskObj->mask($width, $frame, $input->getErrorCorrectionLevel());
             } else {
@@ -76,8 +76,8 @@ class Code
             $masked = $maskObj->makeMask($width, $frame, $mask, $input->getErrorCorrectionLevel());
         }
 
-        if ($masked == NULL) {
-            return NULL;
+        if (is_null($masked)) {
+            return null;
         }
 
         Tools::markTime('after_mask');
@@ -89,69 +89,64 @@ class Code
         return $this;
     }
 
-
     public function encodeInput(Input $input)
     {
         return $this->encodeMask($input, -1);
     }
 
-
-    public function encodeString8bit($string, $version, $level)
+    public function encodeString8bit(string $string, $version, $level)
     {
-        if (string == NULL) {
-            throw new \Exception('empty string!');
-            return NULL;
+        if (is_null($string)) {
+            throw new Exception('empty string!');
         }
 
         $input = new Input($version, $level);
-        if ($input == NULL) return NULL;
+        if (empty($input)) {
+            return null;
+        }
 
-        $ret = $input->append($input, Str::QR_MODE_8, strlen($string), str_split($string));
+        $ret = $input->append(Str::QR_MODE_8, strlen($string), str_split($string));
         if ($ret < 0) {
             unset($input);
-            return NULL;
+            return null;
         }
         return $this->encodeInput($input);
     }
 
-
-    public function encodeString($string, $version, $level, $hint, $casesensitive)
+    public function encodeString(string $string, $version, $level, $hint, $casesensitive)
     {
-
         if ($hint != Str::QR_MODE_8 && $hint != Str::QR_MODE_KANJI) {
-            throw new \Exception('bad hint');
-            return NULL;
+            throw new Exception('bad hint');
         }
 
         $input = new Input($version, $level);
-        if ($input == NULL) return NULL;
+        if (is_null($input)) {
+            return null;
+        }
 
-        $ret = Split::splitStringToQRinput($string, $input, $hint, $casesensitive);
+        $ret = Split::splitStringToQRInput($string, $input, $hint, $casesensitive);
         if ($ret < 0) {
-            return NULL;
+            return null;
         }
 
         return $this->encodeInput($input);
     }
 
-
-    public static function png($text, $outfile = false, $level = Str::QR_ECLEVEL_L, $size = 3, $margin = 4, $saveandprint = false)
+    public static function png(string $text, string $outfile = null, $level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4, bool $saveAndPrint = false)
     {
         $enc = Encode::factory($level, $size, $margin);
-        return $enc->encodePNG($text, $outfile, $saveandprint);
+        return $enc->encodePNG($text, $outfile, $saveAndPrint);
     }
 
-
-    public static function text($text, $outfile = false, $level = Str::QR_ECLEVEL_L, $size = 3, $margin = 4)
+    public static function text(string $text, string $outfile = null, $level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4)
     {
         $enc = Encode::factory($level, $size, $margin);
         return $enc->encode($text, $outfile);
     }
 
-
-    public static function raw($text, $outfile = false, $level = Str::QR_ECLEVEL_L, $size = 3, $margin = 4)
+    public static function raw(string $text, string $outfile = null, $level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4)
     {
         $enc = Encode::factory($level, $size, $margin);
-        return $enc->encodeRAW($text, $outfile);
+        return $enc->encodeRAW($text);
     }
 }

@@ -1,6 +1,10 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
+
+use Exception;
 
 /**
  * Class Split
@@ -9,21 +13,21 @@ namespace PhpQrCode;
  */
 class Split
 {
-
+    /** @var string */
     public $dataStr = '';
+    /** @var Input */
     public $input;
+    /** @var int */
     public $modeHint;
 
-
-    public function __construct($dataStr, $input, $modeHint)
+    public function __construct(string $dataStr, Input $input, int $modeHint)
     {
         $this->dataStr = $dataStr;
         $this->input = $input;
         $this->modeHint = $modeHint;
     }
 
-
-    public static function isdigitat($str, $pos)
+    public static function isDigitAt(string $str, int $pos): bool
     {
         if ($pos >= strlen($str))
             return false;
@@ -31,8 +35,7 @@ class Split
         return ((ord($str[$pos]) >= ord('0')) && (ord($str[$pos]) <= ord('9')));
     }
 
-
-    public static function isalnumat($str, $pos)
+    public static function isAlNumAt(string $str, int $pos): bool
     {
         if ($pos >= strlen($str))
             return false;
@@ -40,20 +43,19 @@ class Split
         return (Input::lookAnTable(ord($str[$pos])) >= 0);
     }
 
-
-    public function identifyMode($pos)
+    public function identifyMode(int $pos): int
     {
-        if ($pos >= strlen($this->dataStr))
+        if ($pos >= strlen($this->dataStr)) {
             return Str::QR_MODE_NUL;
+        }
 
         $c = $this->dataStr[$pos];
 
-        if (self::isdigitat($this->dataStr, $pos)) {
+        if (self::isDigitAt($this->dataStr, $pos)) {
             return Str::QR_MODE_NUM;
-        } else if (self::isalnumat($this->dataStr, $pos)) {
+        } else if (self::isAlNumAt($this->dataStr, $pos)) {
             return Str::QR_MODE_AN;
         } else if ($this->modeHint == Str::QR_MODE_KANJI) {
-
             if ($pos + 1 < strlen($this->dataStr)) {
                 $d = $this->dataStr[$pos + 1];
                 $word = (ord($c) << 8) | ord($d);
@@ -66,13 +68,12 @@ class Split
         return Str::QR_MODE_8;
     }
 
-
-    public function eatNum()
+    public function eatNum(): int
     {
         $ln = Spec::lengthIndicator(Str::QR_MODE_NUM, $this->input->getVersion());
 
         $p = 0;
-        while (self::isdigitat($this->dataStr, $p)) {
+        while (self::isDigitAt($this->dataStr, $p)) {
             $p++;
         }
 
@@ -97,24 +98,24 @@ class Split
         }
 
         $ret = $this->input->append(Str::QR_MODE_NUM, $run, str_split($this->dataStr));
-        if ($ret < 0)
+        if ($ret < 0) {
             return -1;
+        }
 
         return $run;
     }
 
-
-    public function eatAn()
+    public function eatAn(): int
     {
         $la = Spec::lengthIndicator(Str::QR_MODE_AN, $this->input->getVersion());
         $ln = Spec::lengthIndicator(Str::QR_MODE_NUM, $this->input->getVersion());
 
         $p = 0;
 
-        while (self::isalnumat($this->dataStr, $p)) {
-            if (self::isdigitat($this->dataStr, $p)) {
+        while (self::isAlNumAt($this->dataStr, $p)) {
+            if (self::isDigitAt($this->dataStr, $p)) {
                 $q = $p;
-                while (self::isdigitat($this->dataStr, $q)) {
+                while (self::isDigitAt($this->dataStr, $q)) {
                     $q++;
                 }
 
@@ -134,7 +135,7 @@ class Split
 
         $run = $p;
 
-        if (!self::isalnumat($this->dataStr, $p)) {
+        if (!self::isAlNumAt($this->dataStr, $p)) {
             $dif = Input::estimateBitsModeAn($run) + 4 + $la
                 + Input::estimateBitsMode8(1) // + 4 + l8
                 - Input::estimateBitsMode8($run + 1); // - 4 - l8
@@ -144,30 +145,33 @@ class Split
         }
 
         $ret = $this->input->append(Str::QR_MODE_AN, $run, str_split($this->dataStr));
-        if ($ret < 0)
+        if ($ret < 0) {
             return -1;
+        }
 
         return $run;
     }
 
 
-    public function eatKanji()
+    public function eatKanji(): int
     {
         $p = 0;
 
         while ($this->identifyMode($p) == Str::QR_MODE_KANJI) {
             $p += 2;
         }
+        $run = $p;
 
         $ret = $this->input->append(Str::QR_MODE_KANJI, $p, str_split($this->dataStr));
-        if ($ret < 0)
+        if ($ret < 0) {
             return -1;
+        }
 
         return $run;
     }
 
 
-    public function eat8()
+    public function eat8(): int
     {
         $la = Spec::lengthIndicator(Str::QR_MODE_AN, $this->input->getVersion());
         $ln = Spec::lengthIndicator(Str::QR_MODE_NUM, $this->input->getVersion());
@@ -176,14 +180,13 @@ class Split
         $dataStrLen = strlen($this->dataStr);
 
         while ($p < $dataStrLen) {
-
             $mode = $this->identifyMode($p);
             if ($mode == Str::QR_MODE_KANJI) {
                 break;
             }
             if ($mode == Str::QR_MODE_NUM) {
                 $q = $p;
-                while (self::isdigitat($this->dataStr, $q)) {
+                while (self::isDigitAt($this->dataStr, $q)) {
                     $q++;
                 }
                 $dif = Input::estimateBitsMode8($p) // + 4 + l8
@@ -196,7 +199,7 @@ class Split
                 }
             } else if ($mode == Str::QR_MODE_AN) {
                 $q = $p;
-                while (self::isalnumat($this->dataStr, $q)) {
+                while (self::isAlNumAt($this->dataStr, $q)) {
                     $q++;
                 }
                 $dif = Input::estimateBitsMode8($p)  // + 4 + l8
@@ -215,18 +218,19 @@ class Split
         $run = $p;
         $ret = $this->input->append(Str::QR_MODE_8, $run, str_split($this->dataStr));
 
-        if ($ret < 0)
+        if ($ret < 0) {
             return -1;
+        }
 
         return $run;
     }
 
-
-    public function splitString()
+    public function splitString(): ?int
     {
         while (strlen($this->dataStr) > 0) {
-            if ($this->dataStr == '')
+            if ($this->dataStr == '') {
                 return 0;
+            }
 
             $mode = $this->identifyMode(0);
 
@@ -238,9 +242,7 @@ class Split
                     $length = $this->eatAn();
                     break;
                 case Str::QR_MODE_KANJI:
-                    if ($hint == Str::QR_MODE_KANJI)
-                        $length = $this->eatKanji();
-                    else    $length = $this->eat8();
+                    $length = $this->eatKanji();
                     break;
                 default:
                     $length = $this->eat8();
@@ -248,21 +250,26 @@ class Split
 
             }
 
-            if ($length == 0) return 0;
-            if ($length < 0) return -1;
+            if ($length == 0) {
+                return 0;
+            }
+            if ($length < 0) {
+                return -1;
+            }
 
             $this->dataStr = substr($this->dataStr, $length);
         }
+        return null;
     }
 
-
-    public function toUpper()
+    public function toUpper(): string
     {
         $stringLen = strlen($this->dataStr);
         $p = 0;
 
         while ($p < $stringLen) {
-            $mode = self::identifyMode(substr($this->dataStr, $p), $this->modeHint);
+            $mode = self::identifyMode($p);
+            //$mode = self::identifyMode(substr($this->dataStr, $p), $this->modeHint);
             if ($mode == Str::QR_MODE_KANJI) {
                 $p += 2;
             } else {
@@ -276,17 +283,17 @@ class Split
         return $this->dataStr;
     }
 
-
-    public static function splitStringToQRinput($string, Input $input, $modeHint, $casesensitive = true)
+    public static function splitStringToQRInput(string $string, Input $input, int $modeHint, bool $caseSensitive = true): ?string
     {
         if (is_null($string) || $string == '\0' || $string == '') {
-            throw new \Exception('empty string!!!');
+            throw new Exception('empty string!!!');
         }
 
         $split = new Split($string, $input, $modeHint);
 
-        if (!$casesensitive)
+        if (!$caseSensitive) {
             $split->toUpper();
+        }
 
         return $split->splitString();
     }

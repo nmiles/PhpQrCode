@@ -1,6 +1,10 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
+
+use Exception;
 
 /**
  * Class Encode
@@ -9,8 +13,8 @@ namespace PhpQrCode;
  */
 class Encode
 {
-    public $casesensitive = true;
-    public $eightbit = false;
+    public $caseSensitive = true;
+    public $eightBit = false;
 
     public $version = 0;
     public $size = 3;
@@ -21,7 +25,7 @@ class Encode
     public $level = Str::QR_ECLEVEL_L;
     public $hint = Str::QR_MODE_8;
 
-    public static function factory($level = Str::QR_ECLEVEL_L, $size = 3, $margin = 4)
+    public static function factory($level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4): Encode
     {
         $enc = new Encode();
         $enc->size = $size;
@@ -55,61 +59,57 @@ class Encode
         return $enc;
     }
 
-
-    public function encodeRAW($intext, $outfile = false)
+    public function encodeRAW(string $inText): array
     {
         $code = new Code();
 
-        if ($this->eightbit) {
-            $code->encodeString8bit($intext, $this->version, $this->level);
+        if ($this->eightBit) {
+            $code->encodeString8bit($inText, $this->version, $this->level);
         } else {
-            $code->encodeString($intext, $this->version, $this->level, $this->hint, $this->casesensitive);
+            $code->encodeString($inText, $this->version, $this->level, $this->hint, $this->caseSensitive);
         }
 
         return $code->data;
     }
 
-
-    public function encode($intext, $outfile = false)
+    public function encode(string $inText, string $outfile = null)
     {
         $code = new Code();
 
-        if ($this->eightbit) {
-            $code->encodeString8bit($intext, $this->version, $this->level);
+        if ($this->eightBit) {
+            $code->encodeString8bit($inText, $this->version, $this->level);
         } else {
-            $code->encodeString($intext, $this->version, $this->level, $this->hint, $this->casesensitive);
+            $code->encodeString($inText, $this->version, $this->level, $this->hint, $this->caseSensitive);
         }
 
         Tools::markTime('after_encode');
 
-        if ($outfile !== false) {
+        if (!empty($outfile)) {
             file_put_contents($outfile, join("\n", Tools::binarize($code->data)));
         } else {
             return Tools::binarize($code->data);
         }
     }
 
-
-    public function encodePNG($intext, $outfile = false, $saveandprint = false)
+    public function encodePNG(string $inText, string $outfile, $saveAndPrint = false)
     {
         try {
-
             ob_start();
-            $tab = $this->encode($intext);
+            $tab = $this->encode($inText);
             $err = ob_get_contents();
             ob_end_clean();
 
-            if ($err != '')
+            if ($err != '') {
                 Tools::log($outfile, $err);
+            }
 
             $maxSize = (int)(Config::$pngMaximumSize / (count($tab) + 2 * $this->margin));
 
-            Image::png($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin, $saveandprint);
+            Image::png($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin, $saveAndPrint);
 
-        } catch (\Exception $e) {
-
+        } catch (Exception $e) {
             Tools::log($outfile, $e->getMessage());
-
         }
+        return $outfile;
     }
 }

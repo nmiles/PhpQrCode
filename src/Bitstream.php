@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
@@ -65,8 +67,7 @@ class Bitstream
         return $bstream;
     }
 
-
-    public function append(Bitstream $arg)
+    public function append(Bitstream $arg): int
     {
         if (is_null($arg)) {
             return -1;
@@ -86,16 +87,17 @@ class Bitstream
         return 0;
     }
 
-
-    public function appendNum(int $bits, int $num)
+    public function appendNum(int $bits, int $num): int
     {
-        if ($bits == 0)
+        if ($bits == 0) {
             return 0;
+        }
 
         $b = Bitstream::newFromNum($bits, $num);
 
-        if (is_null($b))
+        if (is_null($b)) {
             return -1;
+        }
 
         $ret = $this->append($b);
         unset($b);
@@ -103,16 +105,17 @@ class Bitstream
         return $ret;
     }
 
-
-    public function appendBytes(int $size, array $data)
+    public function appendBytes(int $size, array $data) :int
     {
-        if ($size == 0)
+        if ($size == 0) {
             return 0;
+        }
 
         $b = Bitstream::newFromBytes($size, $data);
 
-        if (is_null($b))
+        if (is_null($b)) {
             return -1;
+        }
 
         $ret = $this->append($b);
         unset($b);
@@ -120,10 +123,8 @@ class Bitstream
         return $ret;
     }
 
-
     public function toByte(): array
     {
-
         $size = $this->size();
 
         if ($size == 0) {

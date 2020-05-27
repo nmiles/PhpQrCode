@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
@@ -23,8 +25,8 @@ class Str
     const QR_ECLEVEL_Q = 2;
     const QR_ECLEVEL_H = 3;
 
-    public static function set(&$srctab, $x, $y, $repl, $replLen = false)
+    public static function set(array &$srcTab, int $x, int $y, string $repl, int $replLen = null): void
     {
-        $srctab[$y] = substr_replace($srctab[$y], ($replLen !== false) ? substr($repl, 0, $replLen) : $repl, $x, ($replLen !== false) ? $replLen : strlen($repl));
+        $srcTab[$y] = substr_replace($srcTab[$y], (is_null($replLen) ? $repl : substr($repl, 0, $replLen)), $x, (is_null($replLen) ? strlen($repl) : $replLen));
     }
 }

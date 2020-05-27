@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 use Exception;
@@ -95,7 +97,7 @@ class Input
         $buf = array($size, $index, $parity);
 
         try {
-            $entry = new InputItem(Str::QR_MODE_STRUCTURE, 3, buf);
+            $entry = new InputItem(Str::QR_MODE_STRUCTURE, 3, $buf);
             array_unshift($this->items, $entry);
             return 0;
         } catch (Exception $e) {
@@ -270,7 +272,6 @@ class Input
     public function estimateVersion()
     {
         $version = 0;
-        $prev = 0;
         do {
             $prev = $version;
             $bits = $this->estimateBitStreamSize($prev);
@@ -438,7 +439,7 @@ class Input
 
         $bstream = $this->mergeBitStream();
 
-        if ($bstream == null) {
+        if (empty($bstream)) {
             return null;
         }
 
@@ -454,7 +455,7 @@ class Input
     public function getByteStream()
     {
         $bstream = $this->getBitStream();
-        if ($bstream == null) {
+        if (empty($bstream)) {
             return null;
         }
 

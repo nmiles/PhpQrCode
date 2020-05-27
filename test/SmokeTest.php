@@ -11,10 +11,14 @@ class SmokeTest extends TestCase
     {
         $pngTmpDir = sys_get_temp_dir() . '/';
 
+        // What to put in the QR
+        $data = 'https://github.com/nmiles/PhpQrCode';
+
+        // Override default config if required
+        PhpQrCode\Config::configure(['defaultMask' => 3]);
+        $this->assertEquals(3, PhpQrCode\Config::$defaultMask);
+
         $levels = ['L', 'M', 'Q', 'H'];
-
-        $data = 'https://www.google.com';
-
         foreach ($levels as $errorCorrectionLevel) {
             for ($matrixPointSize = 1; $matrixPointSize <= 10; $matrixPointSize++) {
                 $filename = $pngTmpDir . 'test' . md5($data . '|' . $errorCorrectionLevel . '|' . $matrixPointSize) . '.png';
@@ -24,6 +28,17 @@ class SmokeTest extends TestCase
                 //echo "Matrix point size: {$matrixPointSize}, error correction level: {$errorCorrectionLevel}, output {$filename}\n";
             }
         }
+
+        // Kanji
+        $data = '分分分分国国国';
+        $output = PhpQrCode\Code::text($data, false, 'L', 5, 5);
+        $this->assertIsArray($output);
+
+        // Change config
+        PhpQrCode\Config::configure(['findFromRandom' => true]);
+        $this->assertEquals(true, PhpQrCode\Config::$findFromRandom);
+        $output = PhpQrCode\Code::text($data, false, 'L', 5, 5);
+        $this->assertIsArray($output);
 
         ob_start();
         PhpQrCode\Tools::timeBenchmark();

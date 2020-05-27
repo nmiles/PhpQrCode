@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 use Exception;
@@ -26,8 +28,7 @@ class InputItem
         }
 
         if (!Input::check($mode, $size, $setData)) {
-            throw new \Exception('Error m:' . $mode . ',s:' . $size . ',d:' . join(',', $setData));
-            return null;
+            throw new Exception('Error m:' . $mode . ',s:' . $size . ',d:' . join(',', $setData));
         }
 
         $this->mode = $mode;
@@ -177,10 +178,9 @@ class InputItem
 
     public function estimateBitStreamSizeOfEntry($version)
     {
-        $bits = 0;
-
-        if ($version == 0)
+        if ($version == 0) {
             $version = 1;
+        }
 
         switch ($this->mode) {
             case Str::QR_MODE_NUM:
@@ -264,7 +264,7 @@ class InputItem
 
             return $this->bstream->size();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return -1;
         }
     }

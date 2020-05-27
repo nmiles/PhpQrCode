@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
@@ -126,7 +128,6 @@ class Mask
         return $bitMask;
     }
 
-
     public static function serial($bitFrame)
     {
         $codeArr = [];
@@ -136,7 +137,6 @@ class Mask
 
         return gzcompress(join("\n", $codeArr), 9);
     }
-
 
     public static function unserial($code)
     {
@@ -149,11 +149,9 @@ class Mask
         return $codeArr;
     }
 
-
     public function makeMaskNo($maskNo, $width, $s, &$d, $maskGenOnly = false)
     {
         $b = 0;
-        $bitMask = [];
 
         $fileName = Config::$cacheDir . 'mask_' . $maskNo . DIRECTORY_SEPARATOR . 'mask_' . $width . '_' . $maskNo . '.dat';
 
@@ -162,16 +160,18 @@ class Mask
                 $bitMask = self::unserial(file_get_contents($fileName));
             } else {
                 $bitMask = $this->generateMaskNo($maskNo, $width, $s, $d);
-                if (!file_exists(Config::$cacheDir . 'mask_' . $maskNo))
+                if (!file_exists(Config::$cacheDir . 'mask_' . $maskNo)) {
                     mkdir(Config::$cacheDir . 'mask_' . $maskNo);
+                }
                 file_put_contents($fileName, self::serial($bitMask));
             }
         } else {
             $bitMask = $this->generateMaskNo($maskNo, $width, $s, $d);
         }
 
-        if ($maskGenOnly)
+        if ($maskGenOnly) {
             return;
+        }
 
         $d = $s;
 
@@ -229,7 +229,6 @@ class Mask
 
     public function evaluateSymbol($width, $frame)
     {
-        $head = 0;
         $demerit = 0;
 
         for ($y = 0; $y < $width; $y++) {
@@ -292,25 +291,19 @@ class Mask
         return $demerit;
     }
 
-
-
-    public function mask($width, $frame, $level)
+    public function mask(int $width, $frame, $level)
     {
         $minDemerit = PHP_INT_MAX;
-        $bestMaskNum = 0;
-        $bestMask = [];
 
         $checked_masks = array(0, 1, 2, 3, 4, 5, 6, 7);
 
         if (Config::$findFromRandom !== false) {
-
             $howManuOut = 8 - (Config::$findFromRandom % 9);
             for ($i = 0; $i < $howManuOut; $i++) {
                 $remPos = rand(0, count($checked_masks) - 1);
                 unset($checked_masks[$remPos]);
                 $checked_masks = array_values($checked_masks);
             }
-
         }
 
         $bestMask = $frame;
@@ -318,8 +311,6 @@ class Mask
         foreach ($checked_masks as $i) {
             $mask = array_fill(0, $width, str_repeat("\0", $width));
 
-            $demerit = 0;
-            $blacks = 0;
             $blacks = $this->makeMaskNo($i, $width, $frame, $mask);
             $blacks += $this->writeFormatInformation($width, $mask, $i, $level);
             $blacks = (int)(100 * $blacks / ($width * $width));
@@ -329,7 +320,6 @@ class Mask
             if ($demerit < $minDemerit) {
                 $minDemerit = $demerit;
                 $bestMask = $mask;
-                $bestMaskNum = $i;
             }
         }
 

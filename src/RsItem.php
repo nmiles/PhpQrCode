@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
@@ -8,19 +10,17 @@ namespace PhpQrCode;
  */
 class RsItem
 {
-
     public $mm;                  // Bits per symbol
     public $nn;                  // Symbols per block (= (1<<mm)-1)
-    public $alpha_to = [];  // log lookup table
-    public $index_of = [];  // Antilog lookup table
-    public $genpoly = [];   // Generator polynomial
+    public $alpha_to = [];       // log lookup table
+    public $index_of = [];       // Antilog lookup table
+    public $genpoly = [];        // Generator polynomial
     public $nroots;              // Number of generator roots = number of parity symbols
     public $fcr;                 // First consecutive root, index form
     public $prim;                // Primitive element, index form
     public $iprim;               // prim-th root of 1, index form
     public $pad;                 // Padding bytes in shortened block
     public $gfpoly;
-
 
     public function modnn($x)
     {
@@ -31,7 +31,6 @@ class RsItem
 
         return $x;
     }
-
 
     public static function init_rs_char($symsize, $gfpoly, $fcr, $prim, $nroots, $pad)
     {
@@ -77,7 +76,7 @@ class RsItem
 
         if ($sr != 1) {
             // field generator polynomial is not primitive!
-            $rs = NULL;
+            $rs = null;
             return $rs;
         }
 
@@ -112,24 +111,20 @@ class RsItem
         }
 
         // convert rs->genpoly[] to index form for quicker encoding
-        for ($i = 0; $i <= $nroots; $i++)
+        for ($i = 0; $i <= $nroots; $i++) {
             $rs->genpoly[$i] = $rs->index_of[$rs->genpoly[$i]];
+        }
 
         return $rs;
     }
 
-
-    public function encode_rs_char($data, &$parity)
+    public function encode_rs_char(array $data, array &$parity): void
     {
-        $MM =& $this->mm;
         $NN =& $this->nn;
         $ALPHA_TO =& $this->alpha_to;
         $INDEX_OF =& $this->index_of;
         $GENPOLY =& $this->genpoly;
         $NROOTS =& $this->nroots;
-        $FCR =& $this->fcr;
-        $PRIM =& $this->prim;
-        $IPRIM =& $this->iprim;
         $PAD =& $this->pad;
         $A0 =& $NN;
 
@@ -160,5 +155,3 @@ class RsItem
         }
     }
 }
-
-//##########################################################################

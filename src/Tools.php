@@ -1,17 +1,19 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
  * Class Tools
- * Toolset, handy and debug utilites.
+ * Toolset, handy and debug utilities.
  * @package PhpQrCode
  */
 class Tools
 {
     const QR_IMAGE = true;
 
-    public static function binarize($frame)
+    public static function binarize(array $frame)
     {
         $len = count($frame);
         foreach ($frame as &$frameLine) {
@@ -23,7 +25,6 @@ class Tools
 
         return $frame;
     }
-
 
     public static function tcpdfBarcodeArray($code, $mode = 'QR,L', $tcPdfVersion = '4.5.037')
     {
@@ -38,7 +39,7 @@ class Tools
             $eccLevel = $mode[1];
         }
 
-        $qrTab = Code::text($code, false, $eccLevel);
+        $qrTab = Code::text($code, null, $eccLevel);
         $size = count($qrTab);
 
         $barcode_array['num_rows'] = $size;
@@ -55,12 +56,10 @@ class Tools
         return $barcode_array;
     }
 
-
     public static function clearCache()
     {
         self::$frames = [];
     }
-
 
     public static function buildCache()
     {
@@ -83,7 +82,6 @@ class Tools
         Tools::markTime('after_build_cache');
     }
 
-
     public static function log($outfile, $err)
     {
         if (Config::$logDir !== false) {
@@ -97,8 +95,7 @@ class Tools
         }
     }
 
-
-    public static function dumpMask($frame)
+    public static function dumpMask(array $frame)
     {
         $width = count($frame);
         for ($y = 0; $y < $width; $y++) {
@@ -108,18 +105,17 @@ class Tools
         }
     }
 
-
     public static function markTime($markerId)
     {
         list($usec, $sec) = explode(" ", microtime());
         $time = ((float)$usec + (float)$sec);
 
-        if (!isset($GLOBALS['qr_time_bench']))
+        if (!isset($GLOBALS['qr_time_bench'])) {
             $GLOBALS['qr_time_bench'] = [];
+        }
 
         $GLOBALS['qr_time_bench'][$markerId] = $time;
     }
-
 
     public static function timeBenchmark()
     {
@@ -149,5 +145,4 @@ class Tools
             </tfoot>
             </table>';
     }
-
 }

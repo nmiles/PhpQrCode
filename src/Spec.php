@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 /**
@@ -97,15 +99,12 @@ class Spec
         return -1;
     }
 
-    //######################################################################
-
     public static $lengthTableBits = array(
         array(10, 12, 14),
         array(9, 11, 13),
         array(8, 16, 16),
         array(8, 10, 12)
     );
-
 
     public static function lengthIndicator($mode, $version)
     {
@@ -122,7 +121,6 @@ class Spec
 
         return self::$lengthTableBits[$mode][$l];
     }
-
 
     public static function maximumWords($mode, $version)
     {
@@ -147,7 +145,7 @@ class Spec
         return $words;
     }
 
-    // Error correction code -----------------------------------------------
+    // Error correction code
     // Table of the error correction code (Reed-Solomon block)
     // See Table 12-16 (pp.30-36), JIS X0510:2004.
 
@@ -246,13 +244,13 @@ class Spec
     );
 
 
-    /** --------------------------------------------------------------------
+    /**
      * Put an alignment marker.
-     * @param frame
-     * @param width
-     * @param ox,oy center coordinate of the pattern
+     * @param array $frame
+     * @param int $ox
+     * @param int $oy center coordinate of the pattern
      */
-    public static function putAlignmentMarker(array &$frame, $ox, $oy)
+    public static function putAlignmentMarker(array &$frame, int $ox, int $oy)
     {
         $finder = array(
             "\xa1\xa1\xa1\xa1\xa1",
@@ -270,11 +268,11 @@ class Spec
         }
     }
 
-
     public static function putAlignmentPattern($version, &$frame, $width)
     {
-        if ($version < 2)
+        if ($version < 2) {
             return;
+        }
 
         $d = self::$alignmentPattern[$version][1] - self::$alignmentPattern[$version][0];
         if ($d < 0) {
@@ -322,7 +320,6 @@ class Spec
         0x1f250, 0x209d5, 0x216f0, 0x228ba, 0x2379f, 0x24b0b, 0x2542e, 0x26a64,
         0x27541, 0x28c69
     );
-
 
     public static function getVersionPattern($version)
     {
@@ -617,5 +614,4 @@ class Spec
     {
         return ($spec[0] + $spec[3]) * $spec[2];
     }
-
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare (strict_types=1);
+
 namespace PhpQrCode;
 
 use Exception;
@@ -20,14 +22,13 @@ class RawCode
     public $eccLength;
     public $b1;
 
-
     public function __construct(Input $input)
     {
         $spec = [0, 0, 0, 0, 0];
 
         $this->datacode = $input->getByteStream();
         if (is_null($this->datacode)) {
-            throw new Exception('null imput string');
+            throw new Exception('null input string');
         }
 
         Spec::getEccSpec($input->getVersion(), $input->getErrorCorrectionLevel(), $spec);
@@ -47,13 +48,11 @@ class RawCode
         $this->count = 0;
     }
 
-
-    public function init(array $spec)
+    public function init(array $spec): int
     {
         $dl = Spec::rsDataCodes1($spec);
         $el = Spec::rsEccCodes1($spec);
         $rs = Rs::init_rs(8, 0x11d, 0, 1, $el, 255 - $dl - $el);
-
 
         $blockNo = 0;
         $dataPos = 0;
@@ -76,7 +75,7 @@ class RawCode
         $el = Spec::rsEccCodes2($spec);
         $rs = Rs::init_rs(8, 0x11d, 0, 1, $el, 255 - $dl - $el);
 
-        if ($rs == NULL) {
+        if (empty($rs)) {
             return -1;
         }
 
@@ -93,8 +92,7 @@ class RawCode
         return 0;
     }
 
-
-    public function getCode()
+    public function getCode(): ?int
     {
         $ret = null;
 
