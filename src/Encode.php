@@ -1,33 +1,35 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
 use Exception;
 
 /**
- * Class Encode
  * One of the main encoder classes
- * @package PhpQrCode
  */
 class Encode
 {
-    public $caseSensitive = true;
-    public $eightBit = false;
+    public bool $caseSensitive = true;
 
-    public $version = 0;
-    public $size = 3;
-    public $margin = 4;
+    public bool $eightBit = false;
 
-    public $structured = 0; // not supported yet
+    public int $version = 0;
 
-    public $level = Str::QR_ECLEVEL_L;
-    public $hint = Str::QR_MODE_8;
+    public int $size = 3;
 
-    public static function factory($level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4): Encode
+    public int $margin = 4;
+
+    public int $structured = 0; // not supported yet
+
+    public int $level = Str::QR_ECLEVEL_L;
+
+    public int $hint = Str::QR_MODE_8;
+
+    public static function factory($level = Str::QR_ECLEVEL_L, int $size = 3, int $margin = 4): self
     {
-        $enc = new Encode();
+        $enc = new self();
         $enc->size = $size;
         $enc->margin = $margin;
 
@@ -84,11 +86,13 @@ class Encode
 
         Tools::markTime('after_encode');
 
-        if (!empty($outfile)) {
-            file_put_contents($outfile, join("\n", Tools::binarize($code->data)));
+        if (! empty($outfile)) {
+            file_put_contents($outfile, implode("\n", Tools::binarize($code->data)));
         } else {
             return Tools::binarize($code->data);
         }
+
+        return null;
     }
 
     public function encodePNG(string $inText, string $outfile, $saveAndPrint = false)
@@ -103,13 +107,14 @@ class Encode
                 Tools::log($outfile, $err);
             }
 
-            $maxSize = (int)(Config::$pngMaximumSize / (count($tab) + 2 * $this->margin));
+            $maxSize = (int) (Config::$pngMaximumSize / (count($tab) + 2 * $this->margin));
 
             Image::png($tab, $outfile, min(max(1, $this->size), $maxSize), $this->margin, $saveAndPrint);
 
-        } catch (Exception $e) {
-            Tools::log($outfile, $e->getMessage());
+        } catch (Exception $exception) {
+            Tools::log($outfile, $exception->getMessage());
         }
+
         return $outfile;
     }
 }

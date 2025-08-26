@@ -1,17 +1,15 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
 /**
- * Class Tools
  * Toolset, handy and debug utilities.
- * @package PhpQrCode
  */
 class Tools
 {
-    const QR_IMAGE = true;
+    public const QR_IMAGE = true;
 
     public static function binarize(array $frame)
     {
@@ -19,7 +17,7 @@ class Tools
         foreach ($frame as &$frameLine) {
 
             for ($i = 0; $i < $len; $i++) {
-                $frameLine[$i] = (ord($frameLine[$i]) & 1) ? '1' : '0';
+                $frameLine[$i] = ((ord($frameLine[$i]) & 1) !== 0) ? '1' : '0';
             }
         }
 
@@ -30,8 +28,9 @@ class Tools
     {
         $barcode_array = [];
 
-        if (!is_array($mode))
-            $mode = explode(',', $mode);
+        if (! is_array($mode)) {
+            $mode = explode(',', (string) $mode);
+        }
 
         $eccLevel = 'L';
 
@@ -48,8 +47,10 @@ class Tools
 
         foreach ($qrTab as $line) {
             $arrAdd = [];
-            foreach (str_split($line) as $char)
-                $arrAdd[] = ($char == '1') ? 1 : 0;
+            foreach (str_split((string) $line) as $char) {
+                $arrAdd[] = ($char === '1') ? 1 : 0;
+            }
+
             $barcode_array['bcode'][] = $arrAdd;
         }
 
@@ -63,7 +64,7 @@ class Tools
 
     public static function buildCache()
     {
-        Tools::markTime('before_build_cache');
+        self::markTime('before_build_cache');
 
         $mask = new Mask();
         for ($a = 1; $a <= Spec::QRSPEC_VERSION_MAX; $a++) {
@@ -75,22 +76,25 @@ class Tools
 
             $width = count($frame);
             $bitMask = array_fill(0, $width, array_fill(0, $width, 0));
-            for ($maskNo = 0; $maskNo < 8; $maskNo++)
+            for ($maskNo = 0; $maskNo < 8; $maskNo++) {
                 $mask->makeMaskNo($maskNo, $width, $frame, $bitMask, true);
+            }
         }
 
-        Tools::markTime('after_build_cache');
+        self::markTime('after_build_cache');
     }
 
     public static function log($outfile, $err)
     {
-        if (Config::$logDir !== false) {
-            if ($err != '') {
-                if ($outfile !== false) {
-                    file_put_contents(Config::$logDir . basename($outfile) . '-errors.txt', date('Y-m-d H:i:s') . ': ' . $err, FILE_APPEND);
-                } else {
-                    file_put_contents(Config::$logDir . 'errors.txt', date('Y-m-d H:i:s') . ': ' . $err, FILE_APPEND);
-                }
+        if (Config::$logDir !== false && $err != '') {
+            if ($outfile !== false) {
+                file_put_contents(
+                    Config::$logDir . basename((string) $outfile) . '-errors.txt',
+                    date('Y-m-d H:i:s') . ': ' . $err,
+                    FILE_APPEND
+                );
+            } else {
+                file_put_contents(Config::$logDir . 'errors.txt', date('Y-m-d H:i:s') . ': ' . $err, FILE_APPEND);
             }
         }
     }
@@ -107,10 +111,10 @@ class Tools
 
     public static function markTime($markerId)
     {
-        list($usec, $sec) = explode(" ", microtime());
-        $time = ((float)$usec + (float)$sec);
+        [$usec, $sec] = explode(' ', microtime());
+        $time = ((float) $usec + (float) $sec);
 
-        if (!isset($GLOBALS['qr_time_bench'])) {
+        if (! isset($GLOBALS['qr_time_bench'])) {
             $GLOBALS['qr_time_bench'] = [];
         }
 
@@ -131,7 +135,10 @@ class Tools
 
         foreach ($GLOBALS['qr_time_bench'] as $markerId => $thisTime) {
             if ($p > 0) {
-                echo '<tr><th style="text-align:right">till ' . $markerId . ': </th><td>' . number_format($thisTime - $lastTime, 6) . 's</td></tr>';
+                echo '<tr><th style="text-align:right">till ' . $markerId . ': </th><td>' . number_format(
+                    $thisTime - $lastTime,
+                    6
+                ) . 's</td></tr>';
             } else {
                 $startTime = $thisTime;
             }
@@ -141,7 +148,10 @@ class Tools
         }
 
         echo '</tbody><tfoot>
-                <tr style="border-top:2px solid black"><th style="text-align:right">TOTAL: </th><td>' . number_format($lastTime - $startTime, 6) . 's</td></tr>
+                <tr style="border-top:2px solid black"><th style="text-align:right">TOTAL: </th><td>' . number_format(
+            $lastTime - $startTime,
+            6
+        ) . 's</td></tr>
             </tfoot>
             </table>';
     }

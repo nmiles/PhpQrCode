@@ -1,25 +1,30 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
 use Exception;
 
-/**
- * Class RawCode
- * @package PhpQrCode
- */
 class RawCode
 {
     public $version;
+
     public $datacode = [];
+
     public $ecccode = [];
+
     public $blocks;
-    public $rsblocks = []; //of RSblock
+
+    public $rsblocks = [];
+
+    //of RSblock
     public $count;
+
     public $dataLength;
+
     public $eccLength;
+
     public $b1;
 
     public function __construct(Input $input)
@@ -27,7 +32,7 @@ class RawCode
         $spec = [0, 0, 0, 0, 0];
 
         $this->datacode = $input->getByteStream();
-        if (is_null($this->datacode)) {
+        if ($this->datacode === null) {
             throw new Exception('null input string');
         }
 
@@ -94,22 +99,22 @@ class RawCode
 
     public function getCode(): ?int
     {
-        $ret = null;
-
         if ($this->count < $this->dataLength) {
             $row = $this->count % $this->blocks;
-            $col = $this->count / $this->blocks;
+            $col = (int) ($this->count / $this->blocks);
             if ($col >= $this->rsblocks[0]->dataLength) {
                 $row += $this->b1;
             }
+
             $ret = $this->rsblocks[$row]->data[$col];
-        } else if ($this->count < $this->dataLength + $this->eccLength) {
+        } elseif ($this->count < $this->dataLength + $this->eccLength) {
             $row = ($this->count - $this->dataLength) % $this->blocks;
-            $col = ($this->count - $this->dataLength) / $this->blocks;
+            $col = (int) (($this->count - $this->dataLength) / $this->blocks);
             $ret = $this->rsblocks[$row]->ecc[$col];
         } else {
             return 0;
         }
+
         $this->count++;
 
         return $ret;

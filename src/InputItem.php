@@ -1,48 +1,39 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
 use Exception;
 
-/**
- * Class InputItem
- * @package PhpQrCode
- */
 class InputItem
 {
-    const STRUCTURE_HEADER_BITS = 20;
+    public const STRUCTURE_HEADER_BITS = 20;
 
-    public $mode;
-    public $size;
-    public $data;
-    public $bstream;
-
-    public function __construct($mode, $size, $data, $bstream = null)
-    {
+    public function __construct(
+        public int $mode,
+        public int $size,
+        public array $data,
+        public $bstream = null
+    ) {
         $setData = array_slice($data, 0, $size);
 
         if (count($setData) < $size) {
             $setData = array_merge($setData, array_fill(0, $size - count($setData), 0));
         }
 
-        if (!Input::check($mode, $size, $setData)) {
-            throw new Exception('Error m:' . $mode . ',s:' . $size . ',d:' . join(',', $setData));
+        if (! Input::check($mode, $size, $setData)) {
+            throw new Exception('Error m:' . $mode . ',s:' . $size . ',d:' . implode(',', $setData));
         }
 
-        $this->mode = $mode;
-        $this->size = $size;
         $this->data = $setData;
-        $this->bstream = $bstream;
     }
-
 
     public function encodeModeNum($version)
     {
         try {
 
-            $words = (int)($this->size / 3);
+            $words = (int) ($this->size / 3);
             $bs = new Bitstream();
 
             $val = 0x1;
@@ -59,7 +50,7 @@ class InputItem
             if ($this->size - $words * 3 == 1) {
                 $val = ord($this->data[$words * 3]) - ord('0');
                 $bs->appendNum(4, $val);
-            } else if ($this->size - $words * 3 == 2) {
+            } elseif ($this->size - $words * 3 == 2) {
                 $val = (ord($this->data[$words * 3]) - ord('0')) * 10;
                 $val += (ord($this->data[$words * 3 + 1]) - ord('0'));
                 $bs->appendNum(7, $val);
@@ -68,29 +59,28 @@ class InputItem
             $this->bstream = $bs;
             return 0;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }
 
-
     public function encodeModeAn($version)
     {
         try {
-            $words = (int)($this->size / 2);
+            $words = (int) ($this->size / 2);
             $bs = new Bitstream();
 
             $bs->appendNum(4, 0x02);
             $bs->appendNum(Spec::lengthIndicator(Str::QR_MODE_AN, $version), $this->size);
 
             for ($i = 0; $i < $words; $i++) {
-                $val = (int)Input::lookAnTable(ord($this->data[$i * 2])) * 45;
-                $val += (int)Input::lookAnTable(ord($this->data[$i * 2 + 1]));
+                $val = (int) Input::lookAnTable(ord($this->data[$i * 2])) * 45;
+                $val += (int) Input::lookAnTable(ord($this->data[$i * 2 + 1]));
 
                 $bs->appendNum(11, $val);
             }
 
-            if ($this->size & 1) {
+            if (($this->size & 1) !== 0) {
                 $val = Input::lookAnTable(ord($this->data[$words * 2]));
                 $bs->appendNum(6, $val);
             }
@@ -98,11 +88,10 @@ class InputItem
             $this->bstream = $bs;
             return 0;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }
-
 
     public function encodeMode8($version)
     {
@@ -119,11 +108,10 @@ class InputItem
             $this->bstream = $bs;
             return 0;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }
-
 
     public function encodeModeKanji($version)
     {
@@ -132,7 +120,7 @@ class InputItem
             $bs = new Bitstream();
 
             $bs->appendNum(4, 0x8);
-            $bs->appendNum(Spec::lengthIndicator(Str::QR_MODE_KANJI, $version), (int)($this->size / 2));
+            $bs->appendNum(Spec::lengthIndicator(Str::QR_MODE_KANJI, $version), (int) ($this->size / 2));
 
             for ($i = 0; $i < $this->size; $i += 2) {
                 $val = (ord($this->data[$i]) << 8) | ord($this->data[$i + 1]);
@@ -151,11 +139,10 @@ class InputItem
             $this->bstream = $bs;
             return 0;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }
-
 
     public function encodeModeStructure()
     {
@@ -170,11 +157,10 @@ class InputItem
             $this->bstream = $bs;
             return 0;
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }
-
 
     public function estimateBitStreamSizeOfEntry($version)
     {
@@ -203,13 +189,10 @@ class InputItem
 
         $l = Spec::lengthIndicator($this->mode, $version);
         $m = 1 << $l;
-        $num = (int)(($this->size + $m - 1) / $m);
+        $num = (int) (($this->size + $m - 1) / $m);
 
-        $bits += $num * (4 + $l);
-
-        return $bits;
+        return $bits + $num * (4 + $l);
     }
-
 
     public function encodeBitStream($version)
     {
@@ -220,8 +203,8 @@ class InputItem
 
             if ($this->size > $words) {
 
-                $st1 = new InputItem($this->mode, $words, $this->data);
-                $st2 = new InputItem($this->mode, $this->size - $words, array_slice($this->data, $words));
+                $st1 = new self($this->mode, $words, $this->data);
+                $st2 = new self($this->mode, $this->size - $words, array_slice($this->data, $words));
 
                 $st1->encodeBitStream($version);
                 $st2->encodeBitStream($version);
@@ -258,13 +241,14 @@ class InputItem
                         break;
                 }
 
-                if ($ret < 0)
+                if ($ret < 0) {
                     return -1;
+                }
             }
 
             return $this->bstream->size();
 
-        } catch (Exception $e) {
+        } catch (Exception) {
             return -1;
         }
     }

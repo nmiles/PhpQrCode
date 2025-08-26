@@ -2,8 +2,9 @@
 
 namespace PhpQrCodeTest;
 
-use PHPUnit\Framework\TestCase;
 use PhpQrCode;
+use PhpQrCode\Str;
+use PHPUnit\Framework\TestCase;
 
 class SmokeTest extends TestCase
 {
@@ -15,13 +16,17 @@ class SmokeTest extends TestCase
         $data = 'https://github.com/nmiles/PhpQrCode';
 
         // Override default config if required
-        PhpQrCode\Config::configure(['defaultMask' => 3]);
+        PhpQrCode\Config::configure([
+            'defaultMask' => 3,
+        ]);
         $this->assertEquals(3, PhpQrCode\Config::$defaultMask);
 
         $levels = ['L', 'M', 'Q', 'H'];
         foreach ($levels as $errorCorrectionLevel) {
             for ($matrixPointSize = 1; $matrixPointSize <= 10; $matrixPointSize++) {
-                $filename = $pngTmpDir . 'test' . md5($data . '|' . $errorCorrectionLevel . '|' . $matrixPointSize) . '.png';
+                $filename = $pngTmpDir . 'test' . md5(
+                    $data . '|' . $errorCorrectionLevel . '|' . $matrixPointSize
+                ) . '.png';
                 PhpQrCode\Code::png($data, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
                 $this->assertFileExists($filename);
                 unlink($filename);
@@ -30,12 +35,15 @@ class SmokeTest extends TestCase
         }
 
         // Kanji
-        $data = '分分分分国国国';
-        $output = PhpQrCode\Code::text($data, false, 'L', 5, 5);
-        $this->assertIsArray($output);
+        $data = '投級ルケチ尾精シワキテ球意サヱレ転接未エタワア口94技ぞひり歩別へゆ平朝ぜかし実装めむず励供やだふり同完なろづ判引目をルめ';
+        $code = new PhpQrCode\Code;
+        $output = $code->encodeString($data, 0, Str::QR_ECLEVEL_Q, Str::QR_MODE_KANJI, false);
+        $this->assertIsObject($output);
 
         // Change config
-        PhpQrCode\Config::configure(['findFromRandom' => true]);
+        PhpQrCode\Config::configure([
+            'findFromRandom' => true,
+        ]);
         $this->assertEquals(true, PhpQrCode\Config::$findFromRandom);
         $output = PhpQrCode\Code::text($data, false, 'L', 5, 5);
         $this->assertIsArray($output);
