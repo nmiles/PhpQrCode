@@ -1,28 +1,25 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
-/**
- * Class Mask
- * @package PhpQrCode
- */
 class Mask
 {
-    const N1 = 3;
-    const N2 = 3;
-    const N3 = 40;
-    const N4 = 10;
+    public const N1 = 3;
+
+    public const N2 = 3;
+
+    public const N3 = 40;
+
+    public const N4 = 10;
 
     public $runLength = [];
-
 
     public function __construct()
     {
         $this->runLength = array_fill(0, Spec::QRSPEC_WIDTH_MAX + 1, 0);
     }
-
 
     public function writeFormatInformation($width, &$frame, $mask, $level)
     {
@@ -30,7 +27,7 @@ class Mask
         $format = Spec::getFormatInfo($mask, $level);
 
         for ($i = 0; $i < 8; $i++) {
-            if ($format & 1) {
+            if (($format & 1) !== 0) {
                 $blacks += 2;
                 $v = 0x85;
             } else {
@@ -43,11 +40,12 @@ class Mask
             } else {
                 $frame[$i + 1][8] = chr($v);
             }
-            $format = $format >> 1;
+
+            $format >>= 1;
         }
 
         for ($i = 0; $i < 7; $i++) {
-            if ($format & 1) {
+            if (($format & 1) !== 0) {
                 $blacks += 2;
                 $v = 0x85;
             } else {
@@ -61,12 +59,11 @@ class Mask
                 $frame[8][6 - $i] = chr($v);
             }
 
-            $format = $format >> 1;
+            $format >>= 1;
         }
 
         return $blacks;
     }
-
 
     public function mask0($x, $y)
     {
@@ -75,12 +72,12 @@ class Mask
 
     public function mask1($x, $y)
     {
-        return ($y & 1);
+        return $y & 1;
     }
 
     public function mask2($x, $y)
     {
-        return ($x % 3);
+        return $x % 3;
     }
 
     public function mask3($x, $y)
@@ -90,7 +87,7 @@ class Mask
 
     public function mask4($x, $y)
     {
-        return (((int)($y / 2)) + ((int)($x / 3))) & 1;
+        return (((int) ($y / 2)) + ((int) ($x / 3))) & 1;
     }
 
     public function mask5($x, $y)
@@ -108,34 +105,15 @@ class Mask
         return ((($x * $y) % 3) + (($x + $y) & 1)) & 1;
     }
 
-
-    private function generateMaskNo($maskNo, $width, $frame)
-    {
-        $bitMask = array_fill(0, $width, array_fill(0, $width, 0));
-
-        for ($y = 0; $y < $width; $y++) {
-            for ($x = 0; $x < $width; $x++) {
-                if (ord($frame[$y][$x]) & 0x80) {
-                    $bitMask[$y][$x] = 0;
-                } else {
-                    $maskFunc = call_user_func(array($this, 'mask' . $maskNo), $x, $y);
-                    $bitMask[$y][$x] = ($maskFunc == 0) ? 1 : 0;
-                }
-
-            }
-        }
-
-        return $bitMask;
-    }
-
     public static function serial($bitFrame)
     {
         $codeArr = [];
 
-        foreach ($bitFrame as $line)
-            $codeArr[] = join('', $line);
+        foreach ($bitFrame as $line) {
+            $codeArr[] = implode('', $line);
+        }
 
-        return gzcompress(join("\n", $codeArr), 9);
+        return gzcompress(implode("\n", $codeArr), 9);
     }
 
     public static function unserial($code)
@@ -143,8 +121,9 @@ class Mask
         $codeArr = [];
 
         $codeLines = explode("\n", gzuncompress($code));
-        foreach ($codeLines as $line)
+        foreach ($codeLines as $line) {
             $codeArr[] = str_split($line);
+        }
 
         return $codeArr;
     }
@@ -159,18 +138,19 @@ class Mask
             if (file_exists($fileName)) {
                 $bitMask = self::unserial(file_get_contents($fileName));
             } else {
-                $bitMask = $this->generateMaskNo($maskNo, $width, $s, $d);
-                if (!file_exists(Config::$cacheDir . 'mask_' . $maskNo)) {
+                $bitMask = $this->generateMaskNo($maskNo, $width, $s);
+                if (! file_exists(Config::$cacheDir . 'mask_' . $maskNo)) {
                     mkdir(Config::$cacheDir . 'mask_' . $maskNo);
                 }
+
                 file_put_contents($fileName, self::serial($bitMask));
             }
         } else {
-            $bitMask = $this->generateMaskNo($maskNo, $width, $s, $d);
+            $bitMask = $this->generateMaskNo($maskNo, $width, $s);
         }
 
         if ($maskGenOnly) {
-            return;
+            return null;
         }
 
         $d = $s;
@@ -178,15 +158,15 @@ class Mask
         for ($y = 0; $y < $width; $y++) {
             for ($x = 0; $x < $width; $x++) {
                 if ($bitMask[$y][$x] == 1) {
-                    $d[$y][$x] = chr(ord($s[$y][$x]) ^ (int)$bitMask[$y][$x]);
+                    $d[$y][$x] = chr(ord($s[$y][$x]) ^ (int) $bitMask[$y][$x]);
                 }
-                $b += (int)(ord($d[$y][$x]) & 1);
+
+                $b += ord($d[$y][$x]) & 1;
             }
         }
 
         return $b;
     }
-
 
     public function makeMask($width, $frame, $maskNo, $level)
     {
@@ -197,7 +177,6 @@ class Mask
         return $masked;
     }
 
-
     public function calcN1N3($length)
     {
         $demerit = 0;
@@ -207,25 +186,24 @@ class Mask
             if ($this->runLength[$i] >= 5) {
                 $demerit += (static::N1 + ($this->runLength[$i] - 5));
             }
-            if ($i & 1) {
-                if (($i >= 3) && ($i < ($length - 2)) && ($this->runLength[$i] % 3 == 0)) {
-                    $fact = (int)($this->runLength[$i] / 3);
-                    if (($this->runLength[$i - 2] == $fact) &&
-                        ($this->runLength[$i - 1] == $fact) &&
-                        ($this->runLength[$i + 1] == $fact) &&
-                        ($this->runLength[$i + 2] == $fact)) {
-                        if (($this->runLength[$i - 3] < 0) || ($this->runLength[$i - 3] >= (4 * $fact))) {
-                            $demerit += static::N3;
-                        } else if ((($i + 3) >= $length) || ($this->runLength[$i + 3] >= (4 * $fact))) {
-                            $demerit += static::N3;
-                        }
+
+            if (($i & 1) !== 0 && ($i >= 3 && $i < $length - 2 && $this->runLength[$i] % 3 == 0)) {
+                $fact = (int) ($this->runLength[$i] / 3);
+                if (($this->runLength[$i - 2] == $fact) &&
+                    ($this->runLength[$i - 1] == $fact) &&
+                    ($this->runLength[$i + 1] == $fact) &&
+                    ($this->runLength[$i + 2] == $fact)) {
+                    if (($this->runLength[$i - 3] < 0) || ($this->runLength[$i - 3] >= (4 * $fact))) {
+                        $demerit += static::N3;
+                    } elseif ((($i + 3) >= $length) || ($this->runLength[$i + 3] >= (4 * $fact))) {
+                        $demerit += static::N3;
                     }
                 }
             }
         }
+
         return $demerit;
     }
-
 
     public function evaluateSymbol($width, $frame)
     {
@@ -237,24 +215,26 @@ class Mask
 
             $frameY = $frame[$y];
 
-            if ($y > 0)
+            if ($y > 0) {
                 $frameYM = $frame[$y - 1];
+            }
 
             for ($x = 0; $x < $width; $x++) {
                 if (($x > 0) && ($y > 0)) {
                     $b22 = ord($frameY[$x]) & ord($frameY[$x - 1]) & ord($frameYM[$x]) & ord($frameYM[$x - 1]);
                     $w22 = ord($frameY[$x]) | ord($frameY[$x - 1]) | ord($frameYM[$x]) | ord($frameYM[$x - 1]);
 
-                    if (($b22 | ($w22 ^ 1)) & 1) {
+                    if ((($b22 | $w22 ^ 1) & 1) !== 0) {
                         $demerit += static::N2;
                     }
                 }
+
                 if (($x == 0) && (ord($frameY[$x]) & 1)) {
                     $this->runLength[0] = -1;
                     $head = 1;
                     $this->runLength[$head] = 1;
-                } else if ($x > 0) {
-                    if ((ord($frameY[$x]) ^ ord($frameY[$x - 1])) & 1) {
+                } elseif ($x > 0) {
+                    if (((ord($frameY[$x]) ^ ord($frameY[$x - 1])) & 1) !== 0) {
                         $head++;
                         $this->runLength[$head] = 1;
                     } else {
@@ -275,8 +255,8 @@ class Mask
                     $this->runLength[0] = -1;
                     $head = 1;
                     $this->runLength[$head] = 1;
-                } else if ($y > 0) {
-                    if ((ord($frame[$y][$x]) ^ ord($frame[$y - 1][$x])) & 1) {
+                } elseif ($y > 0) {
+                    if (((ord($frame[$y][$x]) ^ ord($frame[$y - 1][$x])) & 1) !== 0) {
                         $head++;
                         $this->runLength[$head] = 1;
                     } else {
@@ -295,12 +275,12 @@ class Mask
     {
         $minDemerit = PHP_INT_MAX;
 
-        $checked_masks = array(0, 1, 2, 3, 4, 5, 6, 7);
+        $checked_masks = [0, 1, 2, 3, 4, 5, 6, 7];
 
         if (Config::$findFromRandom !== false) {
             $howManuOut = 8 - (Config::$findFromRandom % 9);
             for ($i = 0; $i < $howManuOut; $i++) {
-                $remPos = rand(0, count($checked_masks) - 1);
+                $remPos = random_int(0, count($checked_masks) - 1);
                 unset($checked_masks[$remPos]);
                 $checked_masks = array_values($checked_masks);
             }
@@ -313,8 +293,8 @@ class Mask
 
             $blacks = $this->makeMaskNo($i, $width, $frame, $mask);
             $blacks += $this->writeFormatInformation($width, $mask, $i, $level);
-            $blacks = (int)(100 * $blacks / ($width * $width));
-            $demerit = (int)((int)(abs($blacks - 50) / 5) * static::N4);
+            $blacks = (int) (100 * $blacks / ($width * $width));
+            $demerit = (int) ((int) (abs($blacks - 50) / 5) * static::N4);
             $demerit += $this->evaluateSymbol($width, $mask);
 
             if ($demerit < $minDemerit) {
@@ -324,5 +304,24 @@ class Mask
         }
 
         return $bestMask;
+    }
+
+    private function generateMaskNo($maskNo, $width, $frame)
+    {
+        $bitMask = array_fill(0, $width, array_fill(0, $width, 0));
+
+        for ($y = 0; $y < $width; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                if ((ord($frame[$y][$x]) & 0x80) !== 0) {
+                    $bitMask[$y][$x] = 0;
+                } else {
+                    $maskFunc = call_user_func([$this, 'mask' . $maskNo], $x, $y);
+                    $bitMask[$y][$x] = ($maskFunc == 0) ? 1 : 0;
+                }
+
+            }
+        }
+
+        return $bitMask;
     }
 }

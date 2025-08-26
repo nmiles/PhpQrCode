@@ -1,23 +1,17 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
-/**
- * Class Bitstream
- * @package PhpQrCode
- */
 class Bitstream
 {
-    /** @var array */
-    public $data = [];
+    public array $data = [];
 
     public function size(): int
     {
         return count($this->data);
     }
-
 
     public function allocate(int $setLength): int
     {
@@ -25,54 +19,43 @@ class Bitstream
         return 0;
     }
 
-
-    public static function newFromNum(int $bits, int $num): Bitstream
+    public static function newFromNum(int $bits, int $num): self
     {
-        $bstream = new Bitstream();
+        $bstream = new self();
         $bstream->allocate($bits);
 
         $mask = 1 << ($bits - 1);
         for ($i = 0; $i < $bits; $i++) {
-            if ($num & $mask) {
-                $bstream->data[$i] = 1;
-            } else {
-                $bstream->data[$i] = 0;
-            }
-            $mask = $mask >> 1;
+            $bstream->data[$i] = ($num & $mask) !== 0 ? 1 : 0;
+
+            $mask >>= 1;
         }
 
         return $bstream;
     }
 
-
-    public static function newFromBytes(int $size, array $data): Bitstream
+    public static function newFromBytes(int $size, array $data): self
     {
-        $bstream = new Bitstream();
+        $bstream = new self();
         $bstream->allocate($size * 8);
+
         $p = 0;
 
         for ($i = 0; $i < $size; $i++) {
             $mask = 0x80;
             for ($j = 0; $j < 8; $j++) {
-                if ($data[$i] & $mask) {
-                    $bstream->data[$p] = 1;
-                } else {
-                    $bstream->data[$p] = 0;
-                }
+                $bstream->data[$p] = ($data[$i] & $mask) !== 0 ? 1 : 0;
+
                 $p++;
-                $mask = $mask >> 1;
+                $mask >>= 1;
             }
         }
 
         return $bstream;
     }
 
-    public function append(Bitstream $arg): int
+    public function append(self $arg): int
     {
-        if (is_null($arg)) {
-            return -1;
-        }
-
         if ($arg->size() == 0) {
             return 0;
         }
@@ -93,11 +76,7 @@ class Bitstream
             return 0;
         }
 
-        $b = Bitstream::newFromNum($bits, $num);
-
-        if (is_null($b)) {
-            return -1;
-        }
+        $b = self::newFromNum($bits, $num);
 
         $ret = $this->append($b);
         unset($b);
@@ -105,17 +84,13 @@ class Bitstream
         return $ret;
     }
 
-    public function appendBytes(int $size, array $data) :int
+    public function appendBytes(int $size, array $data): int
     {
         if ($size == 0) {
             return 0;
         }
 
-        $b = Bitstream::newFromBytes($size, $data);
-
-        if (is_null($b)) {
-            return -1;
-        }
+        $b = self::newFromBytes($size, $data);
 
         $ret = $this->append($b);
         unset($b);
@@ -131,28 +106,30 @@ class Bitstream
             return [];
         }
 
-        $data = array_fill(0, (int)(($size + 7) / 8), 0);
-        $bytes = (int)($size / 8);
+        $data = array_fill(0, (int) (($size + 7) / 8), 0);
+        $bytes = (int) ($size / 8);
 
         $p = 0;
 
         for ($i = 0; $i < $bytes; $i++) {
             $v = 0;
             for ($j = 0; $j < 8; $j++) {
-                $v = $v << 1;
+                $v <<= 1;
                 $v |= $this->data[$p];
                 $p++;
             }
+
             $data[$i] = $v;
         }
 
-        if ($size & 7) {
+        if (($size & 7) !== 0) {
             $v = 0;
             for ($j = 0; $j < ($size & 7); $j++) {
-                $v = $v << 1;
+                $v <<= 1;
                 $v |= $this->data[$p];
                 $p++;
             }
+
             $data[$bytes] = $v;
         }
 

@@ -1,26 +1,52 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
-/**
- * Class RsItem
- * @package PhpQrCode
- */
 class RsItem
 {
-    public $mm;                  // Bits per symbol
-    public $nn;                  // Symbols per block (= (1<<mm)-1)
-    public $alpha_to = [];       // log lookup table
-    public $index_of = [];       // Antilog lookup table
-    public $genpoly = [];        // Generator polynomial
-    public $nroots;              // Number of generator roots = number of parity symbols
-    public $fcr;                 // First consecutive root, index form
-    public $prim;                // Primitive element, index form
-    public $iprim;               // prim-th root of 1, index form
-    public $pad;                 // Padding bytes in shortened block
-    public $gfpoly;
+    public int $mm = 0;
+
+    // Bits per symbol
+
+    public int $nn = 0;
+
+    // Symbols per block (= (1<<mm)-1)
+
+    public array $alpha_to = [];
+
+    // log lookup table
+
+    public array $index_of = [];
+
+    // Antilog lookup table
+
+    public array $genpoly = [];
+
+    // Generator polynomial
+
+    public int $nroots = 0;
+
+    // Number of generator roots = number of parity symbols
+
+    public int $fcr = 0;
+
+    // First consecutive root, index form
+
+    public int $prim = 0;
+
+    // Primitive element, index form
+
+    public int $iprim = 0;
+
+    // prim-th root of 1, index form
+
+    public int $pad = 0;
+
+    // Padding bytes in shortened block
+
+    public int $gfpoly = 0;
 
     public function modnn($x)
     {
@@ -39,15 +65,29 @@ class RsItem
         // May be used under the terms of the GNU Lesser General Public License (LGPL)
 
         $rs = null;
-
         // Check parameter ranges
-        if ($symsize < 0 || $symsize > 8) return $rs;
-        if ($fcr < 0 || $fcr >= (1 << $symsize)) return $rs;
-        if ($prim <= 0 || $prim >= (1 << $symsize)) return $rs;
-        if ($nroots < 0 || $nroots >= (1 << $symsize)) return $rs; // Can't have more roots than symbol values!
-        if ($pad < 0 || $pad >= ((1 << $symsize) - 1 - $nroots)) return $rs; // Too much padding
+        if ($symsize < 0 || $symsize > 8) {
+            return $rs;
+        }
 
-        $rs = new RsItem();
+        if ($fcr < 0 || $fcr >= (1 << $symsize)) {
+            return $rs;
+        }
+
+        if ($prim <= 0 || $prim >= (1 << $symsize)) {
+            return $rs;
+        }
+
+        if ($nroots < 0 || $nroots >= (1 << $symsize)) {
+            return $rs;
+        }
+
+        // Can't have more roots than symbol values!
+        if ($pad < 0 || $pad >= ((1 << $symsize) - 1 - $nroots)) {
+            return $rs;
+        } // Too much padding
+
+        $rs = new self();
         $rs->mm = $symsize;
         $rs->nn = (1 << $symsize) - 1;
         $rs->pad = $pad;
@@ -56,8 +96,8 @@ class RsItem
         $rs->index_of = array_fill(0, $rs->nn + 1, 0);
 
         // PHP style macro replacement ;)
-        $NN =& $rs->nn;
-        $A0 =& $NN;
+        $NN = &$rs->nn;
+        $A0 = &$NN;
 
         // Generate Galois field lookup tables
         $rs->index_of[0] = $A0; // log(zero) = -inf
@@ -68,16 +108,17 @@ class RsItem
             $rs->index_of[$sr] = $i;
             $rs->alpha_to[$i] = $sr;
             $sr <<= 1;
-            if ($sr & (1 << $symsize)) {
+            if (($sr & 1 << $symsize) !== 0) {
                 $sr ^= $gfpoly;
             }
+
             $sr &= $rs->nn;
         }
 
         if ($sr != 1) {
             // field generator polynomial is not primitive!
             $rs = null;
-            return $rs;
+            return null;
         }
 
         /* Form RS code generator polynomial from its roots */
@@ -90,9 +131,9 @@ class RsItem
 
         /* Find prim-th root of 1, used in decoding */
         for ($iprim = 1; ($iprim % $prim) != 0; $iprim += $rs->nn)
-            ; // intentional empty-body loop!
+        ; // intentional empty-body loop!
 
-        $rs->iprim = (int)($iprim / $prim);
+        $rs->iprim = (int) ($iprim / $prim);
         $rs->genpoly[0] = 1;
 
         for ($i = 0, $root = $fcr * $prim; $i < $nroots; $i++, $root += $prim) {
@@ -101,11 +142,14 @@ class RsItem
             // Multiply rs->genpoly[] by  @**(root + x)
             for ($j = $i; $j > 0; $j--) {
                 if ($rs->genpoly[$j] != 0) {
-                    $rs->genpoly[$j] = $rs->genpoly[$j - 1] ^ $rs->alpha_to[$rs->modnn($rs->index_of[$rs->genpoly[$j]] + $root)];
+                    $rs->genpoly[$j] = $rs->genpoly[$j - 1] ^ $rs->alpha_to[$rs->modnn(
+                        $rs->index_of[$rs->genpoly[$j]] + $root
+                    )];
                 } else {
                     $rs->genpoly[$j] = $rs->genpoly[$j - 1];
                 }
             }
+
             // rs->genpoly[0] can never be zero
             $rs->genpoly[0] = $rs->alpha_to[$rs->modnn($rs->index_of[$rs->genpoly[0]] + $root)];
         }
@@ -120,13 +164,13 @@ class RsItem
 
     public function encode_rs_char(array $data, array &$parity): void
     {
-        $NN =& $this->nn;
-        $ALPHA_TO =& $this->alpha_to;
-        $INDEX_OF =& $this->index_of;
-        $GENPOLY =& $this->genpoly;
-        $NROOTS =& $this->nroots;
-        $PAD =& $this->pad;
-        $A0 =& $NN;
+        $NN = &$this->nn;
+        $ALPHA_TO = &$this->alpha_to;
+        $INDEX_OF = &$this->index_of;
+        $GENPOLY = &$this->genpoly;
+        $NROOTS = &$this->nroots;
+        $PAD = &$this->pad;
+        $A0 = &$NN;
 
         $parity = array_fill(0, $NROOTS, 0);
 
@@ -147,11 +191,7 @@ class RsItem
 
             // Shift
             array_shift($parity);
-            if ($feedback != $A0) {
-                array_push($parity, $ALPHA_TO[$this->modnn($feedback + $GENPOLY[0])]);
-            } else {
-                array_push($parity, 0);
-            }
+            $parity[] = $feedback != $A0 ? $ALPHA_TO[$this->modnn($feedback + $GENPOLY[0])] : 0;
         }
     }
 }

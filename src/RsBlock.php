@@ -1,28 +1,19 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace PhpQrCode;
 
-/**
- * Class RsBlock
- * @package PhpQrCode
- */
 class RsBlock
 {
-    public $dataLength;
-    public $data = [];
-    public $eccLength;
-    public $ecc = [];
-
-    public function __construct($dl, $data, $el, &$ecc, RsItem $rs)
-    {
+    public function __construct(
+        public int $dataLength,
+        public array $data = [],
+        public int $eccLength,
+        public array $ecc = [],
+        public RsItem $rs
+    ) {
         $rs->encode_rs_char($data, $ecc);
-
-        $this->dataLength = $dl;
-        $this->data = $data;
-        $this->eccLength = $el;
         $this->ecc = $ecc;
     }
 }
-
